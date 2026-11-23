@@ -16,3 +16,8 @@ target/
 *.lck
 *.vpp.bak_*
 *.vpp.vbak
+
+# Variables de entorno locales (contienen credenciales)
+.env
+.env.*
+!.env.example
