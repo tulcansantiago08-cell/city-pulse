@@ -7,6 +7,7 @@ import com.citypulse.dto.request.RestablecerPasswordRequest;
 import com.citypulse.dto.response.UsuarioResponse;
 import com.citypulse.enums.RolUsuario;
 import com.citypulse.exception.CredencialesInvalidasException;
+import com.citypulse.exception.OperacionNoPermitidaException;
 import com.citypulse.exception.RecursoDuplicadoException;
 import com.citypulse.exception.RecursoNoEncontradoException;
 import com.citypulse.exception.TokenExpiradoException;
@@ -64,6 +65,11 @@ public class AutenticacionServiceImpl implements AutenticacionService {
         if (!passwordHasher.coincide(req.getPassword(), usuario.getPasswordHash())) {
             log.warn("Intento de login fallido para: {}", req.getCorreo());
             throw new CredencialesInvalidasException("Credenciales inválidas");
+        }
+        if (!usuario.isCorreoVerificado()) {
+            // HU001: no se puede iniciar sesión hasta confirmar el correo.
+            throw new OperacionNoPermitidaException(
+                    "Debes verificar tu correo antes de iniciar sesión. Revisa el enlace que te enviamos.");
         }
         if (passwordHasher.esLegado(usuario.getPasswordHash())) {
             // Migración transparente: la contraseña era correcta, se vuelve a guardar con BCrypt.
