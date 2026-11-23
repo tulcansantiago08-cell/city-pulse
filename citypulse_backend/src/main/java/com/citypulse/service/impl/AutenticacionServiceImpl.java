@@ -13,6 +13,7 @@ import com.citypulse.exception.TokenExpiradoException;
 import com.citypulse.model.Asistente;
 import com.citypulse.model.Usuario;
 import com.citypulse.repository.UsuarioRepository;
+import com.citypulse.security.PasswordHasher;
 import com.citypulse.service.AutenticacionService;
 import com.citypulse.service.NotificacionService;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +31,7 @@ public class AutenticacionServiceImpl implements AutenticacionService {
 
     private final UsuarioRepository usuarioRepository;
     private final NotificacionService notificacionService;
+    private final PasswordHasher passwordHasher;
 
     @Override
     public UsuarioResponse registrar(RegistroUsuarioRequest req) {
@@ -59,9 +61,15 @@ public class AutenticacionServiceImpl implements AutenticacionService {
         Usuario usuario = usuarioRepository.findByCorreo(req.getCorreo())
                 .orElseThrow(() -> new CredencialesInvalidasException("Credenciales inválidas"));
 
-        if (!verificarPassword(req.getPassword(), usuario.getPasswordHash())) {
+        if (!passwordHasher.coincide(req.getPassword(), usuario.getPasswordHash())) {
             log.warn("Intento de login fallido para: {}", req.getCorreo());
             throw new CredencialesInvalidasException("Credenciales inválidas");
+        }
+        if (passwordHasher.esLegado(usuario.getPasswordHash())) {
+            // Migración transparente: la contraseña era correcta, se vuelve a guardar con BCrypt.
+            usuario.setPasswordHash(passwordHasher.hash(req.getPassword()));
+            usuarioRepository.save(usuario);
+            log.info("Contraseña migrada a BCrypt para: {}", usuario.getCorreo());
         }
 
         log.info("Login exitoso: {}", usuario.getCorreo());
@@ -124,13 +132,8 @@ public class AutenticacionServiceImpl implements AutenticacionService {
     // Helpers privados
     // ---------------------------------------------------------------
 
-    /** Hash simple en Base64 para MVP. Reemplazar con BCrypt en producción. */
     private String hashPassword(String password) {
-        return Base64.getEncoder().encodeToString(password.getBytes());
-    }
-
-    private boolean verificarPassword(String password, String hash) {
-        return hashPassword(password).equals(hash);
+        return passwordHasher.hash(password);
     }
 
     private UsuarioResponse mapToResponse(Usuario u) {
