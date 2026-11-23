@@ -1,5 +1,6 @@
 package com.citypulse.service.impl;
 
+import com.citypulse.dto.request.CrearAdministradorRequest;
 import com.citypulse.dto.request.LoginGoogleRequest;
 import com.citypulse.dto.request.LoginRequest;
 import com.citypulse.dto.request.RegistroUsuarioRequest;
@@ -10,6 +11,7 @@ import com.citypulse.exception.CredencialesInvalidasException;
 import com.citypulse.exception.OperacionNoPermitidaException;
 import com.citypulse.exception.RecursoDuplicadoException;
 import com.citypulse.exception.TokenExpiradoException;
+import com.citypulse.model.Administrador;
 import com.citypulse.model.Asistente;
 import com.citypulse.model.Usuario;
 import com.citypulse.repository.UsuarioRepository;
@@ -54,6 +56,25 @@ public class AutenticacionServiceImpl implements AutenticacionService {
         log.info("Nuevo asistente registrado: {}", guardado.getCorreo());
         notificacionService.enviarCorreoVerificacion(guardado.getCorreo(), token);
 
+        return mapToResponse(guardado);
+    }
+
+    @Override
+    public UsuarioResponse crearAdministrador(CrearAdministradorRequest req) {
+        if (usuarioRepository.existsByCorreo(req.getCorreo())) {
+            throw new RecursoDuplicadoException("Ya existe un usuario con el correo: " + req.getCorreo());
+        }
+        Administrador admin = new Administrador();
+        admin.setCorreo(req.getCorreo());
+        admin.setPasswordHash(hashPassword(req.getPassword()));
+        admin.setNombre(req.getNombre());
+        admin.setApellido(req.getApellido());
+        admin.setRol(RolUsuario.ADMINISTRADOR);
+        admin.setCorreoVerificado(true);
+        admin.setFechaCreacion(LocalDateTime.now());
+        admin.setFechaModificacion(LocalDateTime.now());
+        Administrador guardado = (Administrador) usuarioRepository.save(admin);
+        log.info("Administrador creado: {}", guardado.getCorreo());
         return mapToResponse(guardado);
     }
 

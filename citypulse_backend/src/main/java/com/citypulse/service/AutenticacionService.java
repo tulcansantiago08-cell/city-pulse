@@ -1,5 +1,6 @@
 package com.citypulse.service;
 
+import com.citypulse.dto.request.CrearAdministradorRequest;
 import com.citypulse.dto.request.LoginGoogleRequest;
 import com.citypulse.dto.request.LoginRequest;
 import com.citypulse.dto.request.RegistroUsuarioRequest;
@@ -25,4 +26,7 @@ public interface AutenticacionService {
 
     /** Valida el token de recuperación y aplica la nueva contraseña. */
     void restablecerPassword(RestablecerPasswordRequest req);
+
+    /** Crea una cuenta de Administrador con correo ya verificado. */
+    UsuarioResponse crearAdministrador(CrearAdministradorRequest req);
 }

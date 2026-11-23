@@ -1,5 +1,6 @@
 package com.citypulse.repository;
 
+import com.citypulse.enums.RolUsuario;
 import com.citypulse.model.Usuario;
 import org.springframework.data.mongodb.repository.MongoRepository;
 
@@ -12,4 +13,6 @@ public interface UsuarioRepository extends MongoRepository<Usuario, String> {
     boolean existsByCorreo(String correo);
 
     Optional<Usuario> findByTokenVerificacion(String token);
+
+    boolean existsByRol(RolUsuario rol);
 }
