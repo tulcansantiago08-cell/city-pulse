@@ -107,8 +107,12 @@ public class AutenticacionServiceImpl implements AutenticacionService {
 
     @Override
     public void solicitarRecuperacion(String correo) {
-        Usuario usuario = usuarioRepository.findByCorreo(correo)
-                .orElseThrow(() -> new RecursoNoEncontradoException("No existe usuario con el correo: " + correo));
+        // HU004: la respuesta es la misma exista o no el correo, para no revelar qué cuentas están registradas.
+        Usuario usuario = usuarioRepository.findByCorreo(correo).orElse(null);
+        if (usuario == null) {
+            log.info("Recuperación solicitada para un correo no registrado (sin envío)");
+            return;
+        }
 
         // NOTA DE DISEÑO: Para una expiración real de 60 minutos se recomienda
         // almacenar el token junto a su fecha de expiración en una colección separada
