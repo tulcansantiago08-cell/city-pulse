@@ -1,0 +1,18 @@
+# macOS
+.DS_Store
+
+# IntelliJ IDEA
+.idea/
+*.iml
+
+# LibreOffice / Word (archivos de bloqueo temporales)
+.~lock.*
+~$*
+
+# Build
+target/
+
+# Visual Paradigm (bloqueos y respaldos automáticos)
+*.lck
+*.vpp.bak_*
+*.vpp.vbak
