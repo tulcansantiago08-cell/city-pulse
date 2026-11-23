@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -145,6 +146,8 @@ public class EventoServiceImpl implements EventoService {
                         filtro.getFechaDesde(),
                         filtro.getFechaHasta())
                 .stream()
+                // HU006/HU007: los resultados filtrados se muestran por proximidad de fecha, igual que el grid.
+                .sorted(Comparator.comparing(Evento::getFechaInicio))
                 .map(e -> mapToCard(e, resolverNombreOrganizador(e.getOrganizadorId())))
                 .collect(Collectors.toList());
     }
