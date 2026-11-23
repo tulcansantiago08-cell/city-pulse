@@ -21,3 +21,6 @@ target/
 .env
 .env.*
 !.env.example
+
+# Resultados generados por las pruebas
+citypulse_backend/pruebas/resultados.json
