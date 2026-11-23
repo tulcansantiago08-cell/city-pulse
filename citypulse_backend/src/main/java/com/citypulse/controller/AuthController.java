@@ -35,12 +35,12 @@ public class AuthController {
     /**
      * Inicia sesión con correo y contraseña.
      *
-     * @return 200 con el token de sesión.
+     * @return 200 con el token JWT; se envía como {@code Authorization: Bearer <token>}.
      */
     @PostMapping("/login")
     public ResponseEntity<Map<String, String>> login(@Valid @RequestBody LoginRequest req) {
         String token = autenticacionService.iniciarSesion(req);
-        return ResponseEntity.ok(Map.of("token", token));
+        return ResponseEntity.ok(Map.of("token", token, "tipo", "Bearer"));
     }
 
     /**

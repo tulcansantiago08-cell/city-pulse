@@ -9,11 +9,11 @@ import com.citypulse.enums.RolUsuario;
 import com.citypulse.exception.CredencialesInvalidasException;
 import com.citypulse.exception.OperacionNoPermitidaException;
 import com.citypulse.exception.RecursoDuplicadoException;
-import com.citypulse.exception.RecursoNoEncontradoException;
 import com.citypulse.exception.TokenExpiradoException;
 import com.citypulse.model.Asistente;
 import com.citypulse.model.Usuario;
 import com.citypulse.repository.UsuarioRepository;
+import com.citypulse.security.JwtService;
 import com.citypulse.security.PasswordHasher;
 import com.citypulse.service.AutenticacionService;
 import com.citypulse.service.NotificacionService;
@@ -22,7 +22,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.Base64;
 import java.util.UUID;
 
 @Slf4j
@@ -33,6 +32,7 @@ public class AutenticacionServiceImpl implements AutenticacionService {
     private final UsuarioRepository usuarioRepository;
     private final NotificacionService notificacionService;
     private final PasswordHasher passwordHasher;
+    private final JwtService jwtService;
 
     @Override
     public UsuarioResponse registrar(RegistroUsuarioRequest req) {
@@ -79,9 +79,7 @@ public class AutenticacionServiceImpl implements AutenticacionService {
         }
 
         log.info("Login exitoso: {}", usuario.getCorreo());
-        // NOTA DE DISEÑO: Token simple en Base64 para MVP. Reemplazar con JWT (spring-security + jjwt)
-        // en la siguiente iteración del proyecto.
-        return Base64.getEncoder().encodeToString((usuario.getId() + ":" + usuario.getRol()).getBytes());
+        return jwtService.generar(usuario);
     }
 
     @Override
