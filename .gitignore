@@ -24,3 +24,6 @@ target/
 
 # Resultados generados por las pruebas
 citypulse_backend/pruebas/resultados.json
+
+# Python
+__pycache__/
