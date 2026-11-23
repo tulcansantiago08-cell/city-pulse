@@ -3,6 +3,10 @@ package com.citypulse.controller;
 import com.citypulse.dto.request.RechazoSolicitudRequest;
 import com.citypulse.dto.response.SolicitudOrganizadorResponse;
 import com.citypulse.service.SolicitudOrganizadorService;
+import com.citypulse.enums.RolUsuario;
+import com.citypulse.security.AutorizacionInterceptor;
+import com.citypulse.security.RequiereRol;
+import com.citypulse.security.UsuarioAutenticado;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +20,7 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/api/v1/admin")
+@RequiereRol(RolUsuario.ADMINISTRADOR)
 @RequiredArgsConstructor
 public class AdminController {
 
@@ -41,8 +46,8 @@ public class AdminController {
     @PostMapping("/solicitudes-organizador/{id}/aprobar")
     public ResponseEntity<Map<String, String>> aprobar(
             @PathVariable String id,
-            @RequestHeader("X-Admin-Id") String adminId) {
-        solicitudService.aprobar(adminId, id);
+            @RequestAttribute(AutorizacionInterceptor.ATRIBUTO) UsuarioAutenticado auth) {
+        solicitudService.aprobar(auth.id(), id);
         return ResponseEntity.ok(Map.of("mensaje", "Solicitud aprobada correctamente"));
     }
 
@@ -57,9 +62,9 @@ public class AdminController {
     @PostMapping("/solicitudes-organizador/{id}/rechazar")
     public ResponseEntity<Map<String, String>> rechazar(
             @PathVariable String id,
-            @RequestHeader("X-Admin-Id") String adminId,
+            @RequestAttribute(AutorizacionInterceptor.ATRIBUTO) UsuarioAutenticado auth,
             @Valid @RequestBody RechazoSolicitudRequest req) {
-        solicitudService.rechazar(adminId, id, req);
+        solicitudService.rechazar(auth.id(), id, req);
         return ResponseEntity.ok(Map.of("mensaje", "Solicitud rechazada correctamente"));
     }
 }

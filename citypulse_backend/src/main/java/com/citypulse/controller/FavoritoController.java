@@ -2,6 +2,10 @@ package com.citypulse.controller;
 
 import com.citypulse.dto.response.EventoCardResponse;
 import com.citypulse.service.FavoritoService;
+import com.citypulse.enums.RolUsuario;
+import com.citypulse.security.AutorizacionInterceptor;
+import com.citypulse.security.RequiereRol;
+import com.citypulse.security.UsuarioAutenticado;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,6 +18,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/v1/usuarios/{asistenteId}/favoritos")
+@RequiereRol(RolUsuario.ASISTENTE)
 @RequiredArgsConstructor
 public class FavoritoController {
 
@@ -26,7 +31,8 @@ public class FavoritoController {
      * @return 200 con lista de cards.
      */
     @GetMapping
-    public ResponseEntity<List<EventoCardResponse>> listar(@PathVariable String asistenteId) {
+    public ResponseEntity<List<EventoCardResponse>> listar(@PathVariable String asistenteId, @RequestAttribute(AutorizacionInterceptor.ATRIBUTO) UsuarioAutenticado auth) {
+        AutorizacionInterceptor.exigirMismoUsuario(auth, asistenteId, false);
         return ResponseEntity.ok(favoritoService.listar(asistenteId));
     }
 
@@ -40,7 +46,9 @@ public class FavoritoController {
     @PostMapping("/{eventoId}")
     public ResponseEntity<Void> agregar(
             @PathVariable String asistenteId,
-            @PathVariable String eventoId) {
+            @PathVariable String eventoId,
+            @RequestAttribute(AutorizacionInterceptor.ATRIBUTO) UsuarioAutenticado auth) {
+        AutorizacionInterceptor.exigirMismoUsuario(auth, asistenteId, false);
         favoritoService.agregar(asistenteId, eventoId);
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
@@ -55,7 +63,9 @@ public class FavoritoController {
     @DeleteMapping("/{eventoId}")
     public ResponseEntity<Void> remover(
             @PathVariable String asistenteId,
-            @PathVariable String eventoId) {
+            @PathVariable String eventoId,
+            @RequestAttribute(AutorizacionInterceptor.ATRIBUTO) UsuarioAutenticado auth) {
+        AutorizacionInterceptor.exigirMismoUsuario(auth, asistenteId, false);
         favoritoService.remover(asistenteId, eventoId);
         return ResponseEntity.noContent().build();
     }

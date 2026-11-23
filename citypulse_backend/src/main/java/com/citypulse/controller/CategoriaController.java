@@ -3,6 +3,10 @@ package com.citypulse.controller;
 import com.citypulse.dto.request.CrearCategoriaRequest;
 import com.citypulse.dto.response.CategoriaResponse;
 import com.citypulse.service.CategoriaService;
+import com.citypulse.enums.RolUsuario;
+import com.citypulse.security.AutorizacionInterceptor;
+import com.citypulse.security.RequiereRol;
+import com.citypulse.security.UsuarioAutenticado;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -37,6 +41,7 @@ public class CategoriaController {
      * @param req nombre de la nueva categoría.
      * @return 201 con la categoría creada.
      */
+    @RequiereRol(RolUsuario.ADMINISTRADOR)
     @PostMapping
     public ResponseEntity<CategoriaResponse> crear(@Valid @RequestBody CrearCategoriaRequest req) {
         return ResponseEntity.status(HttpStatus.CREATED).body(categoriaService.crear(req));
@@ -49,6 +54,7 @@ public class CategoriaController {
      * @param nombre nuevo nombre.
      * @return 200 con la categoría actualizada.
      */
+    @RequiereRol(RolUsuario.ADMINISTRADOR)
     @PutMapping("/{id}")
     public ResponseEntity<CategoriaResponse> modificar(
             @PathVariable String id,
@@ -62,6 +68,7 @@ public class CategoriaController {
      * @param id identificador de la categoría.
      * @return 204 sin contenido.
      */
+    @RequiereRol(RolUsuario.ADMINISTRADOR)
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminar(@PathVariable String id) {
         categoriaService.eliminar(id);

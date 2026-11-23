@@ -7,6 +7,10 @@ import com.citypulse.dto.response.EventoCardResponse;
 import com.citypulse.dto.response.EventoResponse;
 import com.citypulse.enums.Modalidad;
 import com.citypulse.service.EventoService;
+import com.citypulse.enums.RolUsuario;
+import com.citypulse.security.AutorizacionInterceptor;
+import com.citypulse.security.RequiereRol;
+import com.citypulse.security.UsuarioAutenticado;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -75,11 +79,12 @@ public class EventoController {
      * @param req           datos del evento.
      * @return 201 con el evento creado.
      */
+    @RequiereRol(RolUsuario.ORGANIZADOR)
     @PostMapping
     public ResponseEntity<EventoResponse> crear(
-            @RequestHeader("X-Organizador-Id") String organizadorId,
+            @RequestAttribute(AutorizacionInterceptor.ATRIBUTO) UsuarioAutenticado auth,
             @Valid @RequestBody CrearEventoRequest req) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(eventoService.crear(organizadorId, req));
+        return ResponseEntity.status(HttpStatus.CREATED).body(eventoService.crear(auth.id(), req));
     }
 
     /**
@@ -90,12 +95,13 @@ public class EventoController {
      * @param req           nuevos datos del evento.
      * @return 200 con el evento actualizado.
      */
+    @RequiereRol(RolUsuario.ORGANIZADOR)
     @PutMapping("/{id}")
     public ResponseEntity<EventoResponse> editar(
             @PathVariable String id,
-            @RequestHeader("X-Organizador-Id") String organizadorId,
+            @RequestAttribute(AutorizacionInterceptor.ATRIBUTO) UsuarioAutenticado auth,
             @Valid @RequestBody EditarEventoRequest req) {
-        return ResponseEntity.ok(eventoService.editar(organizadorId, id, req));
+        return ResponseEntity.ok(eventoService.editar(auth.id(), id, req));
     }
 
     /**
@@ -105,11 +111,12 @@ public class EventoController {
      * @param organizadorId ID del organizador propietario.
      * @return 204 sin contenido.
      */
+    @RequiereRol(RolUsuario.ORGANIZADOR)
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminar(
             @PathVariable String id,
-            @RequestHeader("X-Organizador-Id") String organizadorId) {
-        eventoService.eliminar(organizadorId, id);
+            @RequestAttribute(AutorizacionInterceptor.ATRIBUTO) UsuarioAutenticado auth) {
+        eventoService.eliminar(auth.id(), id);
         return ResponseEntity.noContent().build();
     }
 
@@ -120,12 +127,13 @@ public class EventoController {
      * @param oculto true para ocultar, false para publicar.
      * @return 200 con mensaje de confirmación.
      */
+    @RequiereRol(RolUsuario.ORGANIZADOR)
     @PatchMapping("/{id}/visibilidad")
     public ResponseEntity<Map<String, String>> cambiarVisibilidad(
             @PathVariable String id,
-            @RequestHeader("X-Organizador-Id") String organizadorId,
+            @RequestAttribute(AutorizacionInterceptor.ATRIBUTO) UsuarioAutenticado auth,
             @RequestParam boolean oculto) {
-        eventoService.cambiarVisibilidad(organizadorId, id, oculto);
+        eventoService.cambiarVisibilidad(auth.id(), id, oculto);
         return ResponseEntity.ok(Map.of("mensaje", "Visibilidad actualizada"));
     }
 
@@ -135,11 +143,12 @@ public class EventoController {
      * @param id identificador del evento.
      * @return 200 con mensaje de confirmación.
      */
+    @RequiereRol(RolUsuario.ORGANIZADOR)
     @PatchMapping("/{id}/cancelar")
     public ResponseEntity<Map<String, String>> cancelar(
             @PathVariable String id,
-            @RequestHeader("X-Organizador-Id") String organizadorId) {
-        eventoService.cancelar(organizadorId, id);
+            @RequestAttribute(AutorizacionInterceptor.ATRIBUTO) UsuarioAutenticado auth) {
+        eventoService.cancelar(auth.id(), id);
         return ResponseEntity.ok(Map.of("mensaje", "Evento cancelado"));
     }
 
@@ -149,8 +158,12 @@ public class EventoController {
      * @param organizadorId ID del organizador.
      * @return 200 con la lista de eventos.
      */
+    @RequiereRol({RolUsuario.ORGANIZADOR, RolUsuario.ADMINISTRADOR})
     @GetMapping("/organizador/{organizadorId}")
-    public ResponseEntity<List<EventoResponse>> listarPorOrganizador(@PathVariable String organizadorId) {
+    public ResponseEntity<List<EventoResponse>> listarPorOrganizador(
+            @PathVariable String organizadorId,
+            @RequestAttribute(AutorizacionInterceptor.ATRIBUTO) UsuarioAutenticado auth) {
+        AutorizacionInterceptor.exigirMismoUsuario(auth, organizadorId, true);
         return ResponseEntity.ok(eventoService.listarPorOrganizador(organizadorId));
     }
 
@@ -162,11 +175,14 @@ public class EventoController {
      * @param anio          año (ej. 2025).
      * @return 200 con mapa de fecha → lista de eventos.
      */
+    @RequiereRol({RolUsuario.ORGANIZADOR, RolUsuario.ADMINISTRADOR})
     @GetMapping("/organizador/{organizadorId}/calendario")
     public ResponseEntity<Map<LocalDate, List<EventoResponse>>> calendario(
             @PathVariable String organizadorId,
             @RequestParam int mes,
-            @RequestParam int anio) {
+            @RequestParam int anio,
+            @RequestAttribute(AutorizacionInterceptor.ATRIBUTO) UsuarioAutenticado auth) {
+        AutorizacionInterceptor.exigirMismoUsuario(auth, organizadorId, true);
         return ResponseEntity.ok(eventoService.obtenerCalendarioMensual(organizadorId, mes, anio));
     }
 }
