@@ -6,9 +6,10 @@ Flujo completo de peticiones HTTP para probar el backend de **City Pulse** en Po
 
 > **Variables de Postman**
 > - `{{base_url}}` = `http://localhost:8080/api/v1`
-> - `{{usuario_id}}`, `{{organizador_id}}`, `{{admin_id}}`, `{{categoria_id}}`, `{{evento_id}}`, `{{solicitud_id}}`: los `id` que devuelve cada respuesta.
+> - `{{usuario_id}}`, `{{organizador_id}}`, `{{categoria_id}}`, `{{evento_id}}`, `{{solicitud_id}}`: los `id` que devuelve cada respuesta.
+> - `{{token}}`, `{{token_organizador}}`, `{{token_admin}}`: el JWT que devuelve el login de cada cuenta.
 >
-> **Sobre la identificación:** en este MVP no hay JWT. Las acciones de organizador y administrador se identifican con las cabeceras `X-Organizador-Id` y `X-Admin-Id`, y las de usuario con el `id` en la ruta. El login devuelve un token simple (Base64 de `id:rol`).
+> **Autenticación:** las rutas protegidas exigen la cabecera `Authorization: Bearer {{token}}`. En Postman: pestaña **Authorization → Bearer Token**. Sin token responde **401**; con un rol sin permiso, **403**. El token dura 24 horas.
 
 ---
 
@@ -24,7 +25,7 @@ Content-Type: application/json
   "password": "CityPulse2026"
 }
 ```
-**201** con el usuario creado. El token de verificación aparece en el log del backend (`[NOTIFICACION] Verificación de correo`).
+**201** con el usuario creado. El token de verificación aparece en el log del backend (`[NOTIFICACION] Verificación de correo`). Hasta verificar el correo, el login responde **403**.
 
 ### 1.2. Verificar correo
 ```http
@@ -41,7 +42,7 @@ Content-Type: application/json
   "password": "CityPulse2026"
 }
 ```
-**200** `{ "token": "..." }` · **401** si las credenciales son incorrectas.
+**200** `{ "token": "<jwt>", "tipo": "Bearer" }` · **401** si las credenciales son incorrectas · **403** si el correo no está verificado.
 
 ### 1.4. Iniciar sesión con Google (pendiente de integración)
 ```http
@@ -59,6 +60,7 @@ Content-Type: application/json
 
 { "correo": "laura.gomez@citypulse.co" }
 ```
+Siempre responde **200** con el mismo mensaje, exista o no el correo.
 ```http
 POST {{base_url}}/auth/restablecer-password
 Content-Type: application/json
@@ -73,14 +75,18 @@ Content-Type: application/json
 
 ## 2. Usuarios
 
+Cada usuario solo puede ver y editar su propia cuenta (el administrador puede consultar cualquiera).
+
 ### 2.1. Consultar usuario
 ```http
 GET {{base_url}}/usuarios/{{usuario_id}}
+Authorization: Bearer {{token}}
 ```
 
 ### 2.2. Editar perfil
 ```http
 PUT {{base_url}}/usuarios/{{usuario_id}}/perfil
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
@@ -93,6 +99,7 @@ Content-Type: application/json
 ### 2.3. Solicitar el rol de Organizador
 ```http
 POST {{base_url}}/usuarios/{{usuario_id}}/solicitar-rol-organizador
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
@@ -109,21 +116,24 @@ Content-Type: application/json
 
 ## 3. Administración
 
+Todas estas rutas son solo para Administradores. El primer administrador se crea al arrancar con `ADMIN_CORREO` y `ADMIN_PASSWORD` (ver `.env.example`).
+
 ### 3.1. Listar solicitudes pendientes
 ```http
 GET {{base_url}}/admin/solicitudes-organizador
+Authorization: Bearer {{token_admin}}
 ```
 
 ### 3.2. Aprobar solicitud
 ```http
 POST {{base_url}}/admin/solicitudes-organizador/{{solicitud_id}}/aprobar
-X-Admin-Id: {{admin_id}}
+Authorization: Bearer {{token_admin}}
 ```
 
 ### 3.3. Rechazar solicitud (motivo obligatorio)
 ```http
 POST {{base_url}}/admin/solicitudes-organizador/{{solicitud_id}}/rechazar
-X-Admin-Id: {{admin_id}}
+Authorization: Bearer {{token_admin}}
 Content-Type: application/json
 
 { "motivo": "Falta el documento que acredite a la entidad." }
@@ -135,17 +145,34 @@ GET {{base_url}}/categorias
 ```
 ```http
 POST {{base_url}}/categorias
+Authorization: Bearer {{token_admin}}
 Content-Type: application/json
 
 { "nombre": "Cultura" }
 ```
 ```http
 PUT {{base_url}}/categorias/{{categoria_id}}?nombre=Salud y Bienestar
+Authorization: Bearer {{token_admin}}
 ```
 ```http
 DELETE {{base_url}}/categorias/{{categoria_id}}
+Authorization: Bearer {{token_admin}}
 ```
 El `DELETE` desactiva la categoría (eliminación lógica).
+
+### 3.5. Crear otro administrador
+```http
+POST {{base_url}}/admin/administradores
+Authorization: Bearer {{token_admin}}
+Content-Type: application/json
+
+{
+  "correo": "coordinacion@citypulse.co",
+  "password": "CityPulse2026",
+  "nombre": "Coordinación",
+  "apellido": "City Pulse"
+}
+```
 
 ---
 
@@ -154,7 +181,7 @@ El `DELETE` desactiva la categoría (eliminación lógica).
 ### 4.1. Crear evento
 ```http
 POST {{base_url}}/eventos
-X-Organizador-Id: {{organizador_id}}
+Authorization: Bearer {{token_organizador}}
 Content-Type: application/json
 
 {
@@ -177,7 +204,7 @@ Content-Type: application/json
 ### 4.2. Editar evento
 ```http
 PUT {{base_url}}/eventos/{{evento_id}}
-X-Organizador-Id: {{organizador_id}}
+Authorization: Bearer {{token_organizador}}
 Content-Type: application/json
 ```
 Mismo cuerpo que al crear. **403** si el evento es de otro organizador.
@@ -185,23 +212,25 @@ Mismo cuerpo que al crear. **403** si el evento es de otro organizador.
 ### 4.3. Ocultar / mostrar, cancelar y eliminar
 ```http
 PATCH {{base_url}}/eventos/{{evento_id}}/visibilidad?oculto=true
-X-Organizador-Id: {{organizador_id}}
+Authorization: Bearer {{token_organizador}}
 ```
 ```http
 PATCH {{base_url}}/eventos/{{evento_id}}/cancelar
-X-Organizador-Id: {{organizador_id}}
+Authorization: Bearer {{token_organizador}}
 ```
 ```http
 DELETE {{base_url}}/eventos/{{evento_id}}
-X-Organizador-Id: {{organizador_id}}
+Authorization: Bearer {{token_organizador}}
 ```
 
-### 4.4. Panel del organizador
+### 4.4. Panel del organizador (solo el propio organizador o un admin)
 ```http
 GET {{base_url}}/eventos/organizador/{{organizador_id}}
+Authorization: Bearer {{token_organizador}}
 ```
 ```http
 GET {{base_url}}/eventos/organizador/{{organizador_id}}/calendario?mes=12&anio=2026
+Authorization: Bearer {{token_organizador}}
 ```
 
 ---
@@ -225,14 +254,17 @@ GET {{base_url}}/eventos/{{evento_id}}
 
 ---
 
-## 6. Favoritos (Asistente)
+## 6. Favoritos (solo el propio Asistente)
 
 ```http
 POST {{base_url}}/usuarios/{{usuario_id}}/favoritos/{{evento_id}}
+Authorization: Bearer {{token}}
 ```
 ```http
 GET {{base_url}}/usuarios/{{usuario_id}}/favoritos
+Authorization: Bearer {{token}}
 ```
 ```http
 DELETE {{base_url}}/usuarios/{{usuario_id}}/favoritos/{{evento_id}}
+Authorization: Bearer {{token}}
 ```

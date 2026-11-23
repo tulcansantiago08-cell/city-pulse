@@ -124,9 +124,11 @@ Un `ASISTENTE` solicita el rol de `ORGANIZADOR` enviando datos de su organizaci�
 
 Base URL: `http://localhost:8080/api/v1`
 
-> Los endpoints protegidos requieren enviar el ID del usuario en un header hasta que se integre JWT.
-> - Organizador: `X-Organizador-Id: <id>`
-> - Administrador: `X-Admin-Id: <id>`
+> **Seguridad.** Los endpoints protegidos exigen `Authorization: Bearer <token>` con el JWT que devuelve `POST /auth/login` (firmado con HS256, válido 24 horas).
+> - Sin token, o con un token inválido o vencido: **401**.
+> - Con un rol que no tiene permiso: **403**.
+> - El rol se consulta en la base en cada petición, así que un Organizador recién aprobado tiene permisos de inmediato.
+> - Las contraseñas se guardan con **BCrypt** (coste 12) y para iniciar sesión hay que haber verificado el correo.
 
 ---
 
@@ -178,17 +180,17 @@ Tipos de organización válidos: `UNIVERSIDAD`, `ALCALDIA`, `EMPRESA`, `GRUPO_LO
 
 ### Eventos — `/eventos`
 
-| Método | Ruta | Header requerido | Descripción |
-|--------|------|-----------------|-------------|
-| `GET` | `/eventos` | — | Lista pública con filtros opcionales |
-| `GET` | `/eventos/{id}` | — | Detalle del evento (incrementa clics) |
-| `POST` | `/eventos` | `X-Organizador-Id` | Crea un nuevo evento |
-| `PUT` | `/eventos/{id}` | `X-Organizador-Id` | Edita un evento |
-| `DELETE` | `/eventos/{id}` | `X-Organizador-Id` | Eliminación lógica |
-| `PATCH` | `/eventos/{id}/visibilidad?oculto=true` | `X-Organizador-Id` | Oculta o publica el evento |
-| `PATCH` | `/eventos/{id}/cancelar` | `X-Organizador-Id` | Cancela el evento |
-| `GET` | `/eventos/organizador/{organizadorId}` | — | Panel del organizador |
-| `GET` | `/eventos/organizador/{organizadorId}/calendario?mes=5&anio=2026` | — | Vista de calendario mensual |
+| Método | Ruta | Acceso | Descripción |
+|--------|------|--------|-------------|
+| `GET` | `/eventos` | Público | Lista pública con filtros opcionales, ordenada por fecha |
+| `GET` | `/eventos/{id}` | Público | Detalle del evento (incrementa clics) |
+| `POST` | `/eventos` | Organizador | Crea un nuevo evento |
+| `PUT` | `/eventos/{id}` | Organizador dueño | Edita un evento |
+| `DELETE` | `/eventos/{id}` | Organizador dueño | Eliminación lógica |
+| `PATCH` | `/eventos/{id}/visibilidad?oculto=true` | Organizador dueño | Oculta o publica el evento |
+| `PATCH` | `/eventos/{id}/cancelar` | Organizador dueño | Cancela el evento |
+| `GET` | `/eventos/organizador/{organizadorId}` | El propio organizador o Admin | Panel del organizador |
+| `GET` | `/eventos/organizador/{organizadorId}/calendario?mes=12&anio=2026` | El propio organizador o Admin | Vista de calendario mensual |
 
 **Filtros disponibles en `GET /eventos`:**
 
@@ -202,7 +204,7 @@ Tipos de organización válidos: `UNIVERSIDAD`, `ALCALDIA`, `EMPRESA`, `GRUPO_LO
 **Ejemplo — Crear evento:**
 ```json
 POST /api/v1/eventos
-X-Organizador-Id: <id_del_organizador>
+Authorization: Bearer <token_del_organizador>
 
 {
   "titulo": "Feria de Emprendimiento 2026",
@@ -225,6 +227,8 @@ X-Organizador-Id: <id_del_organizador>
 
 ### Favoritos — `/usuarios/{asistenteId}/favoritos`
 
+Solo el propio Asistente (`Authorization: Bearer <token>`).
+
 | Método | Ruta | Descripción |
 |--------|------|-------------|
 | `GET` | `/usuarios/{asistenteId}/favoritos` | Lista favoritos con estado actual de cada evento |
@@ -246,16 +250,21 @@ X-Organizador-Id: <id_del_organizador>
 
 ### Administración — `/admin`
 
-| Método | Ruta | Header requerido | Descripción |
-|--------|------|-----------------|-------------|
-| `GET` | `/admin/solicitudes-organizador` | — | Lista solicitudes pendientes |
-| `POST` | `/admin/solicitudes-organizador/{id}/aprobar` | `X-Admin-Id` | Aprueba y promueve al usuario |
-| `POST` | `/admin/solicitudes-organizador/{id}/rechazar` | `X-Admin-Id` | Rechaza con motivo |
+Todo `/admin` es solo para Administradores (`Authorization: Bearer <token>`).
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| `GET` | `/admin/solicitudes-organizador` | Lista solicitudes pendientes |
+| `POST` | `/admin/solicitudes-organizador/{id}/aprobar` | Aprueba y promueve al usuario |
+| `POST` | `/admin/solicitudes-organizador/{id}/rechazar` | Rechaza con motivo (obligatorio) |
+| `POST` | `/admin/administradores` | Crea otra cuenta de Administrador |
+
+El **primer** administrador se crea al arrancar si la base no tiene ninguno y están definidas `ADMIN_CORREO` y `ADMIN_PASSWORD` (ver `.env.example`).
 
 **Ejemplo — Rechazar solicitud:**
 ```json
 POST /api/v1/admin/solicitudes-organizador/{id}/rechazar
-X-Admin-Id: <id_del_admin>
+Authorization: Bearer <token_del_admin>
 
 {
   "motivo": "La información de la organización está incompleta."
@@ -320,10 +329,12 @@ El estado **no se persiste** en la base de datos. Se calcula dinámicamente en c
 - Maven 3.8+ (o usar el wrapper incluido `mvnw`)
 - Acceso a una instancia de MongoDB (local o Atlas)
 
-> **Base de datos:** por defecto la aplicación se conecta a `mongodb://localhost:27017/citypulse_db`. Para usar MongoDB Atlas, define la variable de entorno `MONGODB_URI` con tu propia cadena de conexión antes de ejecutar:
-> ```bash
-> export MONGODB_URI="mongodb+srv://<usuario>:<contraseña>@<cluster>/citypulse_db"
-> ```
+> **Configuración (`.env`).** Copia `.env.example` como `.env` dentro de `citypulse_backend/` y completa:
+> - `MONGODB_URI`: tu cadena de conexión de MongoDB Atlas. Si no la defines, se usa `mongodb://localhost:27017/citypulse_db`.
+> - `JWT_SECRET`: clave de al menos 256 bits para firmar los tokens (`openssl rand -base64 64`).
+> - `ADMIN_CORREO` / `ADMIN_PASSWORD` (opcional): crea el primer administrador si la base no tiene ninguno.
+>
+> El archivo `.env` está en `.gitignore` y nunca se sube a GitHub.
 
 ### Pasos
 
