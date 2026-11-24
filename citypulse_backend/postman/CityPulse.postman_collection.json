@@ -1,0 +1,1933 @@
+{
+  "info": {
+    "_postman_id": "b6096e17-c135-5b21-afab-217d00a1a20f",
+    "name": "City Pulse API",
+    "description": "Colección de pruebas de la API de City Pulse (autor: Santiago Rivas).\n\n1. Arranca el backend (`./mvnw spring-boot:run`).\n2. Selecciona el entorno **City Pulse - Local**.\n3. Ejecuta las carpetas en orden, o toda la colección con **Run collection**.\n\nLos tokens y los ids se guardan solos en las variables de la colección.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (!pm.collectionVariables.get('marca')) pm.collectionVariables.set('marca', Date.now().toString());"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "marca",
+      "value": ""
+    },
+    {
+      "key": "token_asistente",
+      "value": ""
+    },
+    {
+      "key": "asistente_id",
+      "value": ""
+    },
+    {
+      "key": "token_organizador",
+      "value": ""
+    },
+    {
+      "key": "organizador_id",
+      "value": ""
+    },
+    {
+      "key": "token_admin",
+      "value": ""
+    },
+    {
+      "key": "admin_id",
+      "value": ""
+    },
+    {
+      "key": "categoria_id",
+      "value": ""
+    },
+    {
+      "key": "evento_id",
+      "value": ""
+    },
+    {
+      "key": "evento_nuevo_id",
+      "value": ""
+    },
+    {
+      "key": "categoria_nueva_id",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Público (sin iniciar sesión)",
+      "description": "Rutas que cualquiera puede usar.",
+      "item": [
+        {
+          "name": "Listar categorías",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/categorias",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "categorias"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));",
+                  "const cats = pm.response.json();",
+                  "pm.test('Hay categorías activas', () => pm.expect(cats.length).to.be.above(0));",
+                  "pm.collectionVariables.set('categoria_id', cats[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Grid de eventos (ordenado por fecha)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/eventos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "eventos"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));",
+                  "const evs = pm.response.json();",
+                  "pm.test('Viene ordenado por fecha', () => {",
+                  "  const f = evs.map(e => e.fechaInicio);",
+                  "  pm.expect(f).to.eql([...f].sort());",
+                  "});",
+                  "if (evs.length) pm.collectionVariables.set('evento_id', evs[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Filtrar eventos presenciales de diciembre",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/eventos?modalidad=PRESENCIAL&fechaDesde=2026-12-01T00:00:00&fechaHasta=2026-12-31T23:59:59",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "eventos"
+              ],
+              "query": [
+                {
+                  "key": "modalidad",
+                  "value": "PRESENCIAL"
+                },
+                {
+                  "key": "fechaDesde",
+                  "value": "2026-12-01T00:00:00"
+                },
+                {
+                  "key": "fechaHasta",
+                  "value": "2026-12-31T23:59:59"
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));",
+                  "pm.test('Todos son de diciembre 2026', () => pm.response.json().forEach(e => pm.expect(e.fechaInicio.slice(0, 7)).to.eql('2026-12')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Detalle de un evento",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/eventos/{{evento_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "eventos",
+                "{{evento_id}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));",
+                  "pm.test('Trae canal de inscripción', () => pm.expect(pm.response.json().canalInscripcion).to.be.an('object'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Evento inexistente (debe fallar)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/eventos/000000000000000000000000",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "eventos",
+                "000000000000000000000000"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 404\", () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Autenticación",
+      "description": "Inicio de sesión de las cuentas de demostración y reglas de seguridad.",
+      "item": [
+        {
+          "name": "Login asistente (Laura)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Inicia sesión y guarda el token en `token_asistente` y el id en `asistente_id`.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"laura.gomez@citypulse.co\",\n  \"password\": \"CityPulse2026\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));",
+                  "const sesion = (() => {",
+                  "  const token = pm.response.json().token;",
+                  "  pm.test('Devuelve un JWT', () => pm.expect(token.split('.').length).to.eql(3));",
+                  "  const b64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');",
+                  "  return { token, datos: JSON.parse(atob(b64 + '='.repeat((4 - b64.length % 4) % 4))) };",
+                  "})();",
+                  "pm.test('El token es de rol ASISTENTE', () => pm.expect(sesion.datos.rol).to.eql('ASISTENTE'));",
+                  "pm.collectionVariables.set('token_asistente', sesion.token);",
+                  "pm.collectionVariables.set('asistente_id', sesion.datos.sub);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login organizador (Daniela)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Inicia sesión y guarda el token en `token_organizador` y el id en `organizador_id`.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"daniela.rosero@colectivogaleras.org\",\n  \"password\": \"CityPulse2026\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));",
+                  "const sesion = (() => {",
+                  "  const token = pm.response.json().token;",
+                  "  pm.test('Devuelve un JWT', () => pm.expect(token.split('.').length).to.eql(3));",
+                  "  const b64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');",
+                  "  return { token, datos: JSON.parse(atob(b64 + '='.repeat((4 - b64.length % 4) % 4))) };",
+                  "})();",
+                  "pm.test('El token es de rol ORGANIZADOR', () => pm.expect(sesion.datos.rol).to.eql('ORGANIZADOR'));",
+                  "pm.collectionVariables.set('token_organizador', sesion.token);",
+                  "pm.collectionVariables.set('organizador_id', sesion.datos.sub);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login administrador",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Inicia sesión y guarda el token en `token_admin` y el id en `admin_id`.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"admin@citypulse.co\",\n  \"password\": \"CityPulse2026\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));",
+                  "const sesion = (() => {",
+                  "  const token = pm.response.json().token;",
+                  "  pm.test('Devuelve un JWT', () => pm.expect(token.split('.').length).to.eql(3));",
+                  "  const b64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');",
+                  "  return { token, datos: JSON.parse(atob(b64 + '='.repeat((4 - b64.length % 4) % 4))) };",
+                  "})();",
+                  "pm.test('El token es de rol ADMINISTRADOR', () => pm.expect(sesion.datos.rol).to.eql('ADMINISTRADOR'));",
+                  "pm.collectionVariables.set('token_admin', sesion.token);",
+                  "pm.collectionVariables.set('admin_id', sesion.datos.sub);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login con contraseña incorrecta (debe fallar)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"laura.gomez@citypulse.co\",\n  \"password\": \"Equivocada123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registrar usuario nuevo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/registro",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "registro"
+              ]
+            },
+            "description": "El token de verificación aparece en la Terminal del backend: `[NOTIFICACION] Verificación de correo`.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"prueba{{marca}}@citypulse.co\",\n  \"password\": \"CityPulse2026\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 201\", () => pm.response.to.have.status(201));",
+                  "pm.test('Queda como ASISTENTE sin verificar', () => {",
+                  "  pm.expect(pm.response.json().rol).to.eql('ASISTENTE');",
+                  "  pm.expect(pm.response.json().correoVerificado).to.eql(false);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login sin verificar el correo (debe fallar, HU001)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"prueba{{marca}}@citypulse.co\",\n  \"password\": \"CityPulse2026\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 403\", () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registro con correo repetido (debe fallar)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/registro",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "registro"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"laura.gomez@citypulse.co\",\n  \"password\": \"CityPulse2026\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 409\", () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registro con contraseña corta (debe fallar)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/registro",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "registro"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"corta{{marca}}@citypulse.co\",\n  \"password\": \"123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 400\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Recuperar contraseña de correo no registrado (respuesta genérica)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/recuperar-password",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "recuperar-password"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"noexiste@citypulse.co\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Organizador",
+      "description": "Gestión de eventos con la cuenta de Daniela (Colectivo Galeras).",
+      "item": [
+        {
+          "name": "Crear evento",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/eventos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "eventos"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_organizador}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"Taller de Faroles Navideños {{marca}}\",\n  \"descripcion\": \"Aprende a hacer faroles de papel para la Noche de Velitas.\",\n  \"categoriaId\": \"{{categoria_id}}\",\n  \"fechaInicio\": \"2026-12-06T15:00:00\",\n  \"fechaFin\": \"2026-12-06T17:00:00\",\n  \"modalidad\": \"PRESENCIAL\",\n  \"precio\": null,\n  \"canalInscripcion\": {\n    \"tipo\": \"WHATSAPP\",\n    \"destino\": \"+573124567890\",\n    \"mensajePredefinido\": \"Hola, quiero inscribirme al taller de faroles\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 201\", () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('evento_nuevo_id', pm.response.json().id);",
+                  "pm.test('Queda como PROXIMO', () => pm.expect(pm.response.json().estado).to.eql('PROXIMO'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear evento sin iniciar sesión (debe fallar)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/eventos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "eventos"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"Taller de Faroles Navideños {{marca}}\",\n  \"descripcion\": \"Aprende a hacer faroles de papel para la Noche de Velitas.\",\n  \"categoriaId\": \"{{categoria_id}}\",\n  \"fechaInicio\": \"2026-12-06T15:00:00\",\n  \"fechaFin\": \"2026-12-06T17:00:00\",\n  \"modalidad\": \"PRESENCIAL\",\n  \"precio\": null,\n  \"canalInscripcion\": {\n    \"tipo\": \"WHATSAPP\",\n    \"destino\": \"+573124567890\",\n    \"mensajePredefinido\": \"Hola, quiero inscribirme al taller de faroles\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Asistente intenta crear evento (debe fallar)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/eventos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "eventos"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_asistente}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"Taller de Faroles Navideños {{marca}}\",\n  \"descripcion\": \"Aprende a hacer faroles de papel para la Noche de Velitas.\",\n  \"categoriaId\": \"{{categoria_id}}\",\n  \"fechaInicio\": \"2026-12-06T15:00:00\",\n  \"fechaFin\": \"2026-12-06T17:00:00\",\n  \"modalidad\": \"PRESENCIAL\",\n  \"precio\": null,\n  \"canalInscripcion\": {\n    \"tipo\": \"WHATSAPP\",\n    \"destino\": \"+573124567890\",\n    \"mensajePredefinido\": \"Hola, quiero inscribirme al taller de faroles\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 403\", () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear evento con fechas invertidas (debe fallar)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/eventos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "eventos"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_organizador}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"Taller de Faroles Navideños {{marca}}\",\n  \"descripcion\": \"Aprende a hacer faroles de papel para la Noche de Velitas.\",\n  \"categoriaId\": \"{{categoria_id}}\",\n  \"fechaInicio\": \"2026-12-06T18:00:00\",\n  \"fechaFin\": \"2026-12-06T15:00:00\",\n  \"modalidad\": \"PRESENCIAL\",\n  \"precio\": null,\n  \"canalInscripcion\": {\n    \"tipo\": \"WHATSAPP\",\n    \"destino\": \"+573124567890\",\n    \"mensajePredefinido\": \"Hola, quiero inscribirme al taller de faroles\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 400\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Editar evento (precio)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/eventos/{{evento_nuevo_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "eventos",
+                "{{evento_nuevo_id}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_organizador}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"Taller de Faroles Navideños {{marca}}\",\n  \"descripcion\": \"Aprende a hacer faroles de papel para la Noche de Velitas.\",\n  \"categoriaId\": \"{{categoria_id}}\",\n  \"fechaInicio\": \"2026-12-06T15:00:00\",\n  \"fechaFin\": \"2026-12-06T17:00:00\",\n  \"modalidad\": \"PRESENCIAL\",\n  \"precio\": 10000,\n  \"canalInscripcion\": {\n    \"tipo\": \"WHATSAPP\",\n    \"destino\": \"+573124567890\",\n    \"mensajePredefinido\": \"Hola, quiero inscribirme al taller de faroles\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));",
+                  "pm.test('Precio actualizado', () => pm.expect(pm.response.json().precio).to.eql(10000));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Mi panel de eventos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/eventos/organizador/{{organizador_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "eventos",
+                "organizador",
+                "{{organizador_id}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_organizador}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));",
+                  "pm.test('Incluye el evento nuevo', () => pm.expect(pm.response.json().map(e => e.id)).to.include(pm.collectionVariables.get('evento_nuevo_id')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Calendario de diciembre 2026",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/eventos/organizador/{{organizador_id}}/calendario?mes=12&anio=2026",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "eventos",
+                "organizador",
+                "{{organizador_id}}",
+                "calendario"
+              ],
+              "query": [
+                {
+                  "key": "mes",
+                  "value": "12"
+                },
+                {
+                  "key": "anio",
+                  "value": "2026"
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_organizador}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4. Asistente",
+      "description": "Favoritos y perfil con la cuenta de Laura.",
+      "item": [
+        {
+          "name": "Mi perfil",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/usuarios/{{asistente_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "usuarios",
+                "{{asistente_id}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_asistente}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));",
+                  "pm.test('Es Laura', () => pm.expect(pm.response.json().nombre).to.eql('Laura'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ver el perfil de otro usuario (debe fallar)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/usuarios/{{organizador_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "usuarios",
+                "{{organizador_id}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_asistente}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 403\", () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Agregar evento a favoritos",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/usuarios/{{asistente_id}}/favoritos/{{evento_nuevo_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "usuarios",
+                "{{asistente_id}}",
+                "favoritos",
+                "{{evento_nuevo_id}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_asistente}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 201\", () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Agregar el mismo favorito otra vez (debe fallar)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/usuarios/{{asistente_id}}/favoritos/{{evento_nuevo_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "usuarios",
+                "{{asistente_id}}",
+                "favoritos",
+                "{{evento_nuevo_id}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_asistente}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 400\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listar mis favoritos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/usuarios/{{asistente_id}}/favoritos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "usuarios",
+                "{{asistente_id}}",
+                "favoritos"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_asistente}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));",
+                  "pm.test('Incluye el evento nuevo', () => pm.expect(pm.response.json().map(e => e.id)).to.include(pm.collectionVariables.get('evento_nuevo_id')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Quitar de favoritos",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/usuarios/{{asistente_id}}/favoritos/{{evento_nuevo_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "usuarios",
+                "{{asistente_id}}",
+                "favoritos",
+                "{{evento_nuevo_id}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_asistente}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 204\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "5. Organizador: ocultar y cancelar",
+      "description": "Cambios de estado del evento creado en la carpeta 3.",
+      "item": [
+        {
+          "name": "Ocultar evento",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/eventos/{{evento_nuevo_id}}/visibilidad?oculto=true",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "eventos",
+                "{{evento_nuevo_id}}",
+                "visibilidad"
+              ],
+              "query": [
+                {
+                  "key": "oculto",
+                  "value": "true"
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_organizador}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El evento oculto no sale en el grid",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/eventos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "eventos"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));",
+                  "pm.test('No aparece', () => pm.expect(pm.response.json().map(e => e.id)).to.not.include(pm.collectionVariables.get('evento_nuevo_id')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Volver a mostrar el evento",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/eventos/{{evento_nuevo_id}}/visibilidad?oculto=false",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "eventos",
+                "{{evento_nuevo_id}}",
+                "visibilidad"
+              ],
+              "query": [
+                {
+                  "key": "oculto",
+                  "value": "false"
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_organizador}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cancelar evento",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/eventos/{{evento_nuevo_id}}/cancelar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "eventos",
+                "{{evento_nuevo_id}}",
+                "cancelar"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_organizador}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El panel lo muestra CANCELADO",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/eventos/organizador/{{organizador_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "eventos",
+                "organizador",
+                "{{organizador_id}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_organizador}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));",
+                  "const ev = pm.response.json().find(e => e.id === pm.collectionVariables.get('evento_nuevo_id'));",
+                  "pm.test('Estado CANCELADO', () => pm.expect(ev.estado).to.eql('CANCELADO'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Eliminar evento",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/eventos/{{evento_nuevo_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "eventos",
+                "{{evento_nuevo_id}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_organizador}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 204\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "6. Administrador",
+      "description": "Solicitudes, categorías y administradores.",
+      "item": [
+        {
+          "name": "Listar solicitudes pendientes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/solicitudes-organizador",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "solicitudes-organizador"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Asistente intenta ver solicitudes (debe fallar)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/solicitudes-organizador",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "solicitudes-organizador"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_asistente}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 403\", () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear categoría",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/categorias",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "categorias"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Cine {{marca}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 201\", () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('categoria_nueva_id', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear categoría repetida (debe fallar)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/categorias",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "categorias"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Cine {{marca}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 409\", () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear categoría sin iniciar sesión (debe fallar)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/categorias",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "categorias"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Teatro {{marca}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Renombrar categoría",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/categorias/{{categoria_nueva_id}}?nombre=Cine y Series {{marca}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "categorias",
+                "{{categoria_nueva_id}}"
+              ],
+              "query": [
+                {
+                  "key": "nombre",
+                  "value": "Cine y Series {{marca}}"
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Desactivar categoría",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/categorias/{{categoria_nueva_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "categorias",
+                "{{categoria_nueva_id}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 204\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear otro administrador",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/administradores",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "administradores"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"admin{{marca}}@citypulse.co\",\n  \"password\": \"CityPulse2026\",\n  \"nombre\": \"Admin\",\n  \"apellido\": \"Pruebas\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 201\", () => pm.response.to.have.status(201));",
+                  "pm.test('Rol ADMINISTRADOR', () => pm.expect(pm.response.json().rol).to.eql('ADMINISTRADOR'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
