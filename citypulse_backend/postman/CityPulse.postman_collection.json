@@ -98,6 +98,15 @@
                   "pm.collectionVariables.set('categoria_id', cats[0].id);"
                 ]
               }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('marca', Date.now().toString());"
+                ]
+              }
             }
           ]
         },

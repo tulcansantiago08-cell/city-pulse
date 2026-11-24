@@ -103,7 +103,7 @@ coleccion = {
         "token_admin", "admin_id", "categoria_id", "evento_id", "evento_nuevo_id", "categoria_nueva_id"]],
     "item": [
         carpeta("1. Público (sin iniciar sesión)", "Rutas que cualquiera puede usar.", [
-            req("Listar categorías", "GET", "/categorias", tests=[
+            req("Listar categorías", "GET", "/categorias", pre=["pm.collectionVariables.set('marca', Date.now().toString());"], tests=[
                 status(200),
                 "const cats = pm.response.json();",
                 "pm.test('Hay categorías activas', () => pm.expect(cats.length).to.be.above(0));",
