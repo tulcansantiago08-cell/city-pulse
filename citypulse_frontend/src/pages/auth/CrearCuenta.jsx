@@ -28,6 +28,7 @@ export default function CrearCuenta() {
     setError('');
     if (password.length < 8) return setError('La contraseña debe tener al menos 8 caracteres.');
     if (password !== confirmar) return setError('Las contraseñas no coinciden.');
+    if (!acepta) return setError('Debes aceptar los términos y condiciones (marca la casilla).');
     setOcupado(true);
     try {
       await registrarse(correo.trim(), password);
@@ -91,7 +92,7 @@ export default function CrearCuenta() {
 
       <Aviso tipo="error">{error}</Aviso>
 
-      <button className="boton boton-principal ancho-completo" disabled={ocupado || !acepta}>
+      <button className="boton boton-principal ancho-completo" disabled={ocupado}>
         {ocupado ? 'Creando…' : 'Crear cuenta'}
       </button>
       <p className="centrado suave" style={{ marginTop: 20 }}>

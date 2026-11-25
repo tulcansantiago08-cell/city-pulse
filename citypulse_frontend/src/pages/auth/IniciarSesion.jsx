@@ -120,8 +120,9 @@ export default function IniciarSesion() {
       <Aviso tipo="error">{error}</Aviso>
       {sinVerificar && (
         <Aviso tipo="alerta">
-          <strong>Verifica tu correo para entrar.</strong> Te enviamos un enlace a tu correo.{' '}
-          <Link to="/verificar">Ya tengo el código de verificación</Link>
+          <strong>Tu cuenta existe, pero falta verificar el correo.</strong> En esta versión el código aparece en la
+          Terminal del backend, en la línea <code>[NOTIFICACION] Verificación de correo … token=…</code>.{' '}
+          <Link to="/verificar">Pegar el código de verificación</Link>
         </Aviso>
       )}
 

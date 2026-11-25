@@ -34,6 +34,10 @@ export default function SerOrganizador() {
   async function enviar(e) {
     e.preventDefault();
     setError('');
+    if (!politicas || !terminos) {
+      setError('Debes aceptar las políticas de publicación y los términos (marca las dos casillas).');
+      return;
+    }
     setOcupado(true);
     try {
       await solicitarRolOrganizador(usuario.id, datos);
@@ -120,7 +124,7 @@ export default function SerOrganizador() {
 
       <Aviso tipo="error">{error}</Aviso>
 
-      <button className="boton boton-principal ancho-completo" disabled={ocupado || !politicas || !terminos}>
+      <button className="boton boton-principal ancho-completo" disabled={ocupado}>
         {ocupado ? 'Enviando…' : '✈️ Enviar solicitud'}
       </button>
 
